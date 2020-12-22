@@ -8,7 +8,7 @@ from utils import pp, visualize, to_json, show_all_variables, expand_path, times
 
 import tensorflow as tf
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
@@ -72,10 +72,10 @@ def main(_):
   
 
   #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
-  run_config = tf.ConfigProto()
+  run_config = tf.compat.v1.ConfigProto()
   run_config.gpu_options.allow_growth=True
 
-  with tf.Session(config=run_config) as sess:
+  with tf.compat.v1.Session(config=run_config) as sess:
     if FLAGS.dataset == 'mnist':
       dcgan = DCGAN(
           sess,
@@ -119,7 +119,8 @@ def main(_):
     if FLAGS.train:
       dcgan.train(FLAGS)
     else:
-      load_success, load_counter = dcgan.load(FLAGS.checkpoint_dir)
+      # load_success, load_counter = dcgan.load(FLAGS.checkpoint_dir)
+      load_success, load_counter = dcgan.load('out/20201222.205340 - data - food_101 - x128.z100.uniform_signed.y128.b64/checkpoint')
       if not load_success:
         raise Exception("Checkpoint not found in " + FLAGS.checkpoint_dir)
 
@@ -144,4 +145,4 @@ def main(_):
         visualize(sess, dcgan, FLAGS, OPTION, FLAGS.sample_dir)
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

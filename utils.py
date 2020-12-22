@@ -12,12 +12,13 @@ import numpy as np
 import os
 import time
 import datetime
+import imageio
 from time import gmtime, strftime
 from six.moves import xrange
 from PIL import Image
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import tf_slim as slim
 
 pp = pprint.PrettyPrinter()
 
@@ -33,7 +34,7 @@ def timestamp(s='%Y%m%d.%H%M%S', ts=None):
   return st
   
 def show_all_variables():
-  model_vars = tf.trainable_variables()
+  model_vars = tf.compat.v1.trainable_variables()
   slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
 def get_image(image_path, input_height, input_width,
@@ -82,7 +83,8 @@ def merge(images, size):
 
 def imsave(images, size, path):
   image = np.squeeze(merge(images, size))
-  return scipy.misc.imsave(path, image)
+  # return scipy.misc.imsave(path, image)
+  return imageio.imwrite(path, (image*255).astype('uint8'))
 
 def center_crop(x, crop_h, crop_w,
                 resize_h=64, resize_w=64):
@@ -91,18 +93,20 @@ def center_crop(x, crop_h, crop_w,
   h, w = x.shape[:2]
   j = int(round((h - crop_h)/2.))
   i = int(round((w - crop_w)/2.))
-  im = Image.fromarray(x[j:j+crop_h, i:i+crop_w])
-  return np.array(im.resize([resize_h, resize_w]), PIL.Image.BILINEAR)
+  im = Image.fromarray(np.uint8(x[j:j+crop_h, i:i+crop_w]))
+  return np.array(im.resize([resize_h, resize_w]), np.uint8(Image.BILINEAR))
 
-def transform(image, input_height, input_width, 
-              resize_height=64, resize_width=64, crop=True):
+def transform(image, input_height, input_width,
+  resize_height=64, resize_width=64, crop=True):
+  h, w = image.shape[:2]
+  j = int(round((h - input_height) / 2.))
+  i = int(round((w - input_width) / 2.))
   if crop:
-    cropped_image = center_crop(
-      image, input_height, input_width, 
-      resize_height, resize_width)
+    cropped_image = center_crop(image, input_height, input_width, resize_height, resize_width)
+    im = Image.fromarray(np.uint8(image[j:j + input_height, i:i + input_width]))
   else:
-    im = Image.fromarray(image[j:j+crop_h, i:i+crop_w])
-  return np.array(im.resize([resize_h, resize_w]), PIL.Image.BILINEAR)/127.5 - 1.
+    im = Image.fromarray(np.uint8(image[j:j + input_height, i:i + input_width]))
+  return np.array(im.resize([resize_height, resize_width]), np.uint8(Image.BILINEAR))/127.5 - 1.
 
 def inverse_transform(images):
   return (images+1.)/2.
